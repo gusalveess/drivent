@@ -63,7 +63,7 @@ async function createOrUpdateEnrollmentWithAddress(params: CreateOrUpdateEnrollm
 
   //TODO - Verificar se o CEP é válido
 
-  const result = await getAddressFromCEP(address.cep);
+  const result = await getAddressFromCEP(address.addressDetail);
   if (result.error) {
     throw notFoundError();
   }
