@@ -1,61 +1,46 @@
 import { AuthenticatedRequest } from "@/middlewares";
-import { id, getTicket, ticketTypeId } from "@/protocols";
 import ticketService from "@/services/tickets-service";
 import { Response } from "express";
 import httpStatus from "http-status";
 
-export async function getTicketType(req: AuthenticatedRequest, res: Response) {
-  const { id } = req.body as id;
-
+export async function getTicketTypes(req: AuthenticatedRequest, res: Response) {
   try {
-    const ticketType = await ticketService.getTicketTypeWithId(id);
-    const arrayTicket = [ticketType];
+    const ticketTypes = await ticketService.getTicketTypes();
 
-    if (!ticketType) {
-      res.send([]);
-    }
-
-    res.status(200).send(arrayTicket);
+    return res.status(httpStatus.OK).send(ticketTypes);
   } catch (error) {
-    if (error.name === "NotFoundError") {
-      res.send([]);
-    }
+    return res.sendStatus(httpStatus.NO_CONTENT);
   }
 }
 
-export async function Tickets(req: AuthenticatedRequest, res: Response) {
+export async function getTickets(req: AuthenticatedRequest, res: Response) {
   const { userId } = req;
+
   try {
-    const ticket = await ticketService.getTicketWithId(userId);
-    return res.status(httpStatus.OK).send(ticket);
+    const ticketTypes = await ticketService.getTicketByUserId(userId);
+
+    return res.status(httpStatus.OK).send(ticketTypes);
   } catch (error) {
     return res.sendStatus(httpStatus.NOT_FOUND);
   }
 }
 
-export async function PostTicketTypeId(req: AuthenticatedRequest, res: Response) {
-  const { ticketTypeId } = req.body as ticketTypeId;
-
-  try {
-    if (!ticketTypeId) {
-      return res.send(httpStatus.BAD_REQUEST);
-    }
-    res.send(httpStatus.OK);
-  } catch {
-    return res.send(httpStatus.BAD_REQUEST);
-  }
-}
-
-export async function postCreateTicket(req: AuthenticatedRequest, res: Response) {
+export async function createTicket(req: AuthenticatedRequest, res: Response) {
   const { userId } = req;
-  const { ticketTypeId }: { ticketTypeId: number } = req.body;
+
+  //TODO validação do JOI
+  const { ticketTypeId } = req.body;
+
+  if (!ticketTypeId) {
+    return res.sendStatus(httpStatus.BAD_REQUEST);
+  }
+
   try {
-    const ticket = await ticketService.createTicketWithTicketTypeId({
-      userId,
-      ticketTypeId,
-    });
-    return res.status(httpStatus.CREATED).send(ticket);
+    const ticketTypes = await ticketService.createTicket(userId, ticketTypeId);
+
+    return res.status(httpStatus.CREATED).send(ticketTypes);
   } catch (error) {
     return res.sendStatus(httpStatus.NOT_FOUND);
   }
 }
+
