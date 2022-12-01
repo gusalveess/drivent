@@ -1,72 +1,43 @@
-import { notFoundError, unauthorizedError, noPaid } from "@/errors";
-import ticketRepository from "@/repositories/ticket-repository";
+import hotelRepository from "@/repositories/hotel-repository";
 import enrollmentRepository from "@/repositories/enrollment-repository";
-import hotelsRepository from "@/repositories/hotels-repository";
+import ticketRepository from "@/repositories/ticket-repository";
+import { notFoundError } from "@/errors";
+import { cannotListHotelsError } from "@/errors/cannot-list-hotels-error";
 
-async function verifyTicketAndEnrollment(ticketId: number, userId: number) {
-  const ticket = await ticketRepository.findTickeWithTypeById(ticketId);
-
-  if (!ticket) {
+async function listHotels(userId: number) {
+  //Tem enrollment?
+  const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
+  if (!enrollment) {
     throw notFoundError();
   }
+  //Tem ticket pago isOnline false e includesHotel true
+  const ticket = await ticketRepository.findTicketByEnrollmentId(enrollment.id);
 
-  if(ticket.TicketType.includesHotel === false && ticket.TicketType.isRemote === true) {
-    throw notFoundError();
-  }
-
-  if (ticket.status === "RESERVED") {
-    throw noPaid();
-  }
-
-  const enrollment = await enrollmentRepository.findById(ticket.enrollmentId);
-
-  if (enrollment.userId !== userId) {
-    throw unauthorizedError();
+  if (!ticket || ticket.status === "RESERVED" || ticket.TicketType.isRemote || !ticket.TicketType.includesHotel) {
+    throw cannotListHotelsError();
   }
 }
 
-async function GetHotels(ticketId: number, userId: number) {
-  await verifyTicketAndEnrollment(ticketId, userId);
+async function getHotels(userId: number) {
+  await listHotels(userId);
 
-  const result = await hotelsRepository.GetHotels();
-
-  if(!result) {
-    throw notFoundError();
-  }
-
-  return result;
+  const hotels = await hotelRepository.findHotels();
+  return hotels;
 }
 
-async function GetRooms(hotelId: number) {
-  const Rooms = await hotelsRepository.FindRoomsById(hotelId);
+async function getHotelsWithRooms(userId: number, hotelId: number) {
+  await listHotels(userId);
+  const hotel = await hotelRepository.findRoomsByHotelId(hotelId);
 
-  if(!Rooms) {
+  if (!hotel) {
     throw notFoundError();
   }
-
-  const result = {
-    id: Rooms.id,
-    name: Rooms.name,
-    image: Rooms.image,
-    createdAt: Rooms.createdAt.toISOString(),
-    updatedAt: Rooms.updatedAt.toISOString(),
-    Rooms:
-      {
-        id: Rooms.Rooms[0].id,
-        name: Rooms.Rooms[0].name,
-        capacity: Rooms.Rooms[0].capacity,
-        hotelId: Rooms.Rooms[0].hotelId,
-        createdAt: Rooms.Rooms[0].createdAt.toISOString(),
-        updatedAt: Rooms.Rooms[0].updatedAt.toISOString(),
-      }
-  };
-
-  return result;
+  return hotel;
 }
 
-const hotelsService = {
-  GetHotels,
-  GetRooms
+const hotelService = {
+  getHotels,
+  getHotelsWithRooms,
 };
 
-export default hotelsService;
+export default hotelService;

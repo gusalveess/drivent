@@ -1,10 +1,10 @@
 import { prisma } from "@/config";
 
-async function GetHotels() {
+async function findHotels() {
   return prisma.hotel.findMany();
 }
 
-async function FindRoomsById(hotelId: number) {
+async function findRoomsByHotelId(hotelId: number) {
   return prisma.hotel.findFirst({
     where: {
       id: hotelId,
@@ -15,10 +15,9 @@ async function FindRoomsById(hotelId: number) {
   });
 }
 
-const hotelsRepository = {
-  GetHotels,
-  FindRoomsById
+const hotelRepository = {
+  findHotels,
+  findRoomsByHotelId,
 };
-  
-export default hotelsRepository;
-  
+
+export default hotelRepository;
